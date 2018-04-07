@@ -7,10 +7,16 @@ import os
 video_capture = cv2.VideoCapture(0)
 
 ##TODO: Load all known faces
-for fn in os.listdir('known_faces'):
-	if os.path.isfile(fn):
-		print(fn)
+known_images = []
+
+known_dir = 'known_faces'
+for root, dirs, filenames in os.walk(known_dir):
+    for f in filenames:
+        known_images.append(f)
+
 ##
+
+
 
 '''
 # Load a sample picture and learn how to recognize it.
