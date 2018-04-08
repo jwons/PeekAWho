@@ -1,53 +1,40 @@
 import face_recognition
 import cv2
-import datetime
+import time
 import os
+import socket
+import sys
+
+print("Booting up...")
+
 
 # Get a reference to webcam #0 (the default one)
 video_capture = cv2.VideoCapture(0)
 
-##TODO: Load all known faces
+## Load all known faces
+known_names = []
 known_images = []
-
+known_enc = []
 known_dir = 'known_faces'
 for root, dirs, filenames in os.walk(known_dir):
     for f in filenames:
-        known_images.append(f)
+        known_images.append(face_recognition.load_image_file('known_faces/'+f))
+        theName = os.path.splitext(os.path.basename('known_faces/'+f))[0]
+        known_names.append({'name':theName , 'time': time.time() - 300})
 
-##
+for img in known_images:
+    known_enc.append(face_recognition.face_encodings(img)[0])
 
-
-
-'''
-# Load a sample picture and learn how to recognize it.
-obama_image = face_recognition.load_image_file("obama.jp
-obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
-
-# Load a second sample picture and learn how to recognize it.
-biden_image = face_recognition.load_image_file("biden.jpg")
-biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
-'''
-joe_image = face_recognition.load_image_file("Joe W.png")
-joe_face_encoding = face_recognition.face_encodings(joe_image)[0]
-
-jer_image = face_recognition.load_image_file("Jer M.jpg")
-jer_face_encoding = face_recognition.face_encodings(jer_image)[0]
-
-# Create arrays of known face encodings and their names
-known_face_encodings = [
-    joe_face_encoding,
-    jer_face_encoding
-]
-known_face_names = [
-    "Joe W",
-    "Jer M"
-]
+print("Known faces have been loaded")
 
 # Initialize some variables
 face_locations = []
 face_encodings = []
 face_names = []
 process_this_frame = True
+
+unknown_encs = []
+found_times = []
 
 while True:
     # Grab a single frame of video
@@ -68,13 +55,25 @@ while True:
         face_names = []
         for face_encoding in face_encodings:
             # See if the face is a match for the known face(s)
-            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+            matches = face_recognition.compare_faces(known_enc, face_encoding)
             name = "Unknown"
 
             # If a match was found in known_face_encodings, just use the first one.
             if True in matches:
                 first_match_index = matches.index(True)
-                name = known_face_names[first_match_index]
+                name = known_names[first_match_index]['name']
+                if known_names[first_match_index]['time'] + 300 < time.time():
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    server = '10.140.166.24'
+                    port = 10000
+                    sock.connect((server, port))
+                    print("Succesfully connected to the user")
+                    message = name + ' is at the front door'
+                    sock.sendto(message.encode(), (server, port))
+                    sock.close()
+                    print('Message sent to user')
+                known_names[first_match_index]['time'] = time.time()
+
 
             face_names.append(name)
 
